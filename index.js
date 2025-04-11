@@ -41,13 +41,25 @@ client.on('interactionCreate', async interaction => {
   const filePath = path.join(__dirname, 'keys.json');
   let keys = [];
 
-  if (fs.existsSync(filePath)) {
-    keys = JSON.parse(fs.readFileSync(filePath, 'utf8'));
+  try {
+    if (fs.existsSync(filePath)) {
+      keys = JSON.parse(fs.readFileSync(filePath, 'utf8'));
+    }
+  } catch (err) {
+    console.error('Erro ao ler keys.json:', err);
   }
 
   if (interaction.commandName === 'verificar') {
     const inputKey = interaction.options.getString('key');
     const now = new Date();
+
+    // Verificação de key vazia ou muito curta
+    if (!inputKey || inputKey.length < 8) {
+      return interaction.reply({
+        content: '❌ Você precisa fornecer uma key válida (mínimo 8 caracteres).',
+        ephemeral: true
+      });
+    }
 
     const keyObj = keys.find(k => k.key === inputKey);
 
@@ -83,7 +95,10 @@ client.on('interactionCreate', async interaction => {
 
     fs.writeFileSync(filePath, JSON.stringify(keys, null, 2));
 
-    return interaction.reply({ content: `🔑 Nova key gerada: \`${newKey}\`\n⏳ Válida por 12 horas.`, ephemeral: true });
+    return interaction.reply({
+      content: `🔑 Nova key gerada: \`${newKey}\`\n⏳ Válida por 12 horas.`,
+      ephemeral: true
+    });
   }
 });
 
