@@ -1,7 +1,12 @@
 const { Client, GatewayIntentBits, REST, Routes, SlashCommandBuilder } = require('discord.js');
 const fs = require('fs');
 const path = require('path');
-const config = require('./config.json');
+
+// Pegando as variáveis do Railway
+const config = {
+  token: process.env.TOKEN,
+  client_id: process.env.CLIENT_ID
+};
 
 const client = new Client({ intents: [GatewayIntentBits.Guilds] });
 
@@ -22,16 +27,16 @@ const commands = [
 const rest = new REST({ version: '10' }).setToken(config.token);
 
 client.once('ready', async () => {
-  console.log(`Bot online como ${client.user.tag}`);
-  console.log("Registrando comandos...");
+  console.log(`✅ Bot online como ${client.user.tag}`);
+  console.log("📦 Registrando comandos...");
   try {
     await rest.put(
       Routes.applicationCommands(config.client_id),
       { body: commands }
     );
-    console.log("Comando registrado com sucesso!");
+    console.log("✅ Comandos registrados com sucesso!");
   } catch (error) {
-    console.error("Erro ao registrar comandos:", error);
+    console.error("❌ Erro ao registrar comandos:", error);
   }
 });
 
@@ -41,30 +46,27 @@ client.on('interactionCreate', async interaction => {
   const filePath = path.join(__dirname, 'keys.json');
   let keys = [];
 
-  try {
-    if (fs.existsSync(filePath)) {
+  if (fs.existsSync(filePath)) {
+    try {
       keys = JSON.parse(fs.readFileSync(filePath, 'utf8'));
+    } catch (err) {
+      console.error("❌ Erro ao ler keys.json:", err);
+      return interaction.reply({ content: '⚠️ Erro interno ao acessar as keys.', ephemeral: true });
     }
-  } catch (err) {
-    console.error('Erro ao ler keys.json:', err);
   }
 
   if (interaction.commandName === 'verificar') {
     const inputKey = interaction.options.getString('key');
     const now = new Date();
 
-    // Verificação de key vazia ou muito curta
-    if (!inputKey || inputKey.length < 8) {
-      return interaction.reply({
-        content: '❌ Você precisa fornecer uma key válida (mínimo 8 caracteres).',
-        ephemeral: true
-      });
+    if (!inputKey || inputKey.length < 10) {
+      return interaction.reply({ content: '❌ Key inválida ou muito curta.', ephemeral: true });
     }
 
     const keyObj = keys.find(k => k.key === inputKey);
 
     if (!keyObj) {
-      return interaction.reply({ content: '❌ Key inválida.', ephemeral: true });
+      return interaction.reply({ content: '❌ Key não encontrada.', ephemeral: true });
     }
 
     const createdAt = new Date(keyObj.created_at);
@@ -95,10 +97,7 @@ client.on('interactionCreate', async interaction => {
 
     fs.writeFileSync(filePath, JSON.stringify(keys, null, 2));
 
-    return interaction.reply({
-      content: `🔑 Nova key gerada: \`${newKey}\`\n⏳ Válida por 12 horas.`,
-      ephemeral: true
-    });
+    return interaction.reply({ content: `🔑 Nova key gerada: \`${newKey}\`\n⏳ Válida por 12 horas.`, ephemeral: true });
   }
 });
 
