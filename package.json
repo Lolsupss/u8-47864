@@ -11,7 +11,3 @@
     "discord.js": "^14.13.0"
   }
 }
-
-git add package.json
-git commit -m "Adiciona dependências express, cors e discord.js"
-git push
